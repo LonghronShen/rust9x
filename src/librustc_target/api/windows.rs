@@ -27,14 +27,39 @@ const WINDOWS_VERSIONS: [&str; 26] = [
     "10.0.19041", // 10 2004
 ];
 
-pub fn get_enabled_target_api_features(requested_apis: &[String]) -> Vec<&'static str> {
-    let highest_index = requested_apis.iter().fold(None, |old_highest_index, api| {
-        if let Some((index, _)) = WINDOWS_VERSIONS.iter().enumerate().find(|&(_, ver)| ver == api) {
-            old_highest_index.map(|old_index| std::cmp::max(old_index, index)).or(Some(index))
-        } else {
-            old_highest_index
-        }
-    });
+const ANSI_WINDOWS_VERSIONS: [&str; 7] = [
+    "4.00.950",   // 95
+    "4.00.950 A", // 95 OSR1 (A)
+    "4.00.950 B", // 95 OSR2/2.1 (B)
+    "4.00.950 C", // 95 OSR2.5 (C)
+    "4.10.1998",  // 98
+    "4.10.2222",  // 98 SE
+    "4.90.3000",  // ME
+];
 
-    highest_index.map(|i| WINDOWS_VERSIONS[..=i].into()).unwrap_or(vec![])
+pub fn get_enabled_target_api_features(requested_apis: &[String]) -> Vec<&'static str> {
+    fn find_highest_index(
+        requested_apis: &[String],
+        version_list: &[&'static str],
+    ) -> Option<usize> {
+        requested_apis.iter().fold(None, |old_highest_index, api| {
+            if let Some((index, _)) = version_list.iter().enumerate().find(|&(_, ver)| ver == api) {
+                old_highest_index.map(|old_index| std::cmp::max(old_index, index)).or(Some(index))
+            } else {
+                old_highest_index
+            }
+        })
+    }
+
+    let highest_index_nt = find_highest_index(requested_apis, &WINDOWS_VERSIONS);
+    let highest_index_ansi = find_highest_index(requested_apis, &ANSI_WINDOWS_VERSIONS);
+
+    let mut enabled_features =
+        highest_index_nt.map(|i| WINDOWS_VERSIONS[..=i].into()).unwrap_or(vec![]);
+
+    if let Some(i) = highest_index_ansi {
+        enabled_features.extend(&ANSI_WINDOWS_VERSIONS[..=i]);
+    }
+
+    enabled_features
 }
