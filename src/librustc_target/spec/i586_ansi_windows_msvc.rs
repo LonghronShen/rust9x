@@ -9,6 +9,10 @@ pub fn target() -> TargetResult {
     let pre_link_args_msvc = vec![
         // Disable SAFESEH since VC6 libraries don't support it
         "/SAFESEH:NO".to_string(),
+        // Link to ___CxxFrameHandler (XP and earlier MSVCRT) instead of ___CxxFrameHandler3.
+        // This cannot be done in the MSVC `eh_personality `handling because LLVM hardcodes SEH
+        // support based on that name sadly
+        "/ALTERNATENAME:___CxxFrameHandler3=___CxxFrameHandler".to_string(),
     ];
     base.pre_link_args.get_mut(&LinkerFlavor::Msvc).unwrap().extend(pre_link_args_msvc.clone());
     base.pre_link_args
