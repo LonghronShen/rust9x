@@ -716,9 +716,12 @@ if #[cfg(not(target_vendor = "uwp"))] {
         pub fn SetHandleInformation(hObject: HANDLE,
                                     dwMask: DWORD,
                                     dwFlags: DWORD) -> BOOL;
+        #[cfg(target_api_feature = "5.1.2600")]
         pub fn AddVectoredExceptionHandler(FirstHandler: ULONG,
                                            VectoredHandler: PVECTORED_EXCEPTION_HANDLER)
                                            -> LPVOID;
+        #[cfg(target_api_feature = "5.2.3790")]
+        pub fn SetThreadStackGuarantee(_size: *mut c_ulong) -> BOOL;
         pub fn CreateHardLinkW(lpSymlinkFileName: LPCWSTR,
                                lpTargetFileName: LPCWSTR,
                                lpSecurityAttributes: LPSECURITY_ATTRIBUTES)
@@ -1045,7 +1048,12 @@ compat_fn! {
                                      _dwFlags: DWORD) -> DWORD {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD); 0
     }
-    #[cfg(not(target_vendor = "uwp"))]
+    #[cfg(not(target_api_feature = "5.1.2600"))]
+    pub fn AddVectoredExceptionHandler(FirstHandler: ULONG,
+                                       VectoredHandler: PVECTORED_EXCEPTION_HANDLER) -> LPVOID {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD); crate::ptr::null_mut()
+    }
+    #[cfg(all(not(target_vendor = "uwp"), not(target_api_feature = "5.2.3790")))]
     pub fn SetThreadStackGuarantee(_size: *mut c_ulong) -> BOOL {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD); 0
     }
