@@ -976,13 +976,6 @@ extern "system" {
     pub fn bind(socket: SOCKET, address: *const SOCKADDR, address_len: socklen_t) -> c_int;
     pub fn listen(socket: SOCKET, backlog: c_int) -> c_int;
     pub fn connect(socket: SOCKET, address: *const SOCKADDR, len: c_int) -> c_int;
-    pub fn getaddrinfo(
-        node: *const c_char,
-        service: *const c_char,
-        hints: *const ADDRINFOA,
-        res: *mut *mut ADDRINFOA,
-    ) -> c_int;
-    pub fn freeaddrinfo(res: *mut ADDRINFOA);
 
     pub fn GetProcAddress(handle: HMODULE, name: LPCSTR) -> *mut c_void;
     pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
@@ -1030,6 +1023,27 @@ extern "system" {
     pub fn HeapAlloc(hHeap: HANDLE, dwFlags: DWORD, dwBytes: SIZE_T) -> LPVOID;
     pub fn HeapReAlloc(hHeap: HANDLE, dwFlags: DWORD, lpMem: LPVOID, dwBytes: SIZE_T) -> LPVOID;
     pub fn HeapFree(hHeap: HANDLE, dwFlags: DWORD, lpMem: LPVOID) -> BOOL;
+}
+
+cfg_if::cfg_if! {
+if #[cfg(target_api_feature = "5.1.2600")] {
+    extern "system" {
+        pub fn getaddrinfo(
+            node: *const c_char,
+            service: *const c_char,
+            hints: *const ADDRINFOA,
+            res: *mut *mut ADDRINFOA,
+        ) -> c_int;
+        pub fn freeaddrinfo(res: *mut ADDRINFOA);
+    }
+} else {
+    mod wspiapi;
+
+    // alternative impl/shim impl of these functions
+    //
+    // compatible with old winsock/winsock2, but IPv4 only.
+    pub use wspiapi::{getaddrinfo, freeaddrinfo};
+}
 }
 
 // Functions that aren't available on every version of Windows that we support,
