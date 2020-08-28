@@ -320,6 +320,11 @@
 #![feature(wake_trait)]
 // NB: the above list is sorted to minimize merge conflicts.
 #![default_lib_allocator]
+// for custom backtrace-rs impl
+#![cfg_attr(
+    all(target_arch = "x86", not(target_api_feature = "5.1.2600")),
+    feature(naked_functions)
+)]
 
 // Explicitly import the prelude. The compiler uses this same unstable attribute
 // to import the prelude implicitly when building crates that depend on std.
