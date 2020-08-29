@@ -686,6 +686,7 @@ if #[cfg(not(target_vendor = "uwp"))] {
     pub const TOKEN_READ: DWORD = 0x20008;
 
     extern "system" {
+        #[cfg(target_api_feature = "5.1.2600")]
         #[link_name = "SystemFunction036"]
         pub fn RtlGenRandom(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN;
 
@@ -1117,4 +1118,30 @@ compat_fn! {
     pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN {
         panic!("rwlocks not available")
     }
+}
+
+cfg_if::cfg_if! {
+if #[cfg(all(not(target_vendor = "uwp"), not(target_api_feature = "5.1.2600")))] {
+
+    mod rtl_gen_random;
+
+    extern "system" {
+        pub fn GetTickCount() -> DWORD;
+    }
+
+    compat_fn! {
+        advapi32:
+        /// RtlGenRandom
+        pub fn SystemFunction036(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN {
+
+            rtl_gen_random::RtlGenRandom(RandomBuffer, RandomBufferLength);
+
+            1
+        }
+    }
+
+    pub const RtlGenRandom: unsafe fn(
+        RandomBuffer: *mut u8,
+        RandomBufferLength: ULONG) -> BOOLEAN = SystemFunction036;
+}
 }
