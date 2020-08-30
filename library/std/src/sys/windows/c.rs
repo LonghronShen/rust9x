@@ -830,6 +830,7 @@ extern "system" {
     pub fn WaitForSingleObject(hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
     pub fn SwitchToThread() -> BOOL;
     pub fn Sleep(dwMilliseconds: DWORD);
+    #[cfg(target_api_feature = "5.2.3790")]
     pub fn GetProcessId(handle: HANDLE) -> DWORD;
     pub fn CopyFileExW(
         lpExistingFileName: LPCWSTR,
@@ -1052,6 +1053,10 @@ if #[cfg(target_api_feature = "5.1.2600")] {
 compat_fn! {
     kernel32:
 
+    #[cfg(not(target_api_feature = "5.2.3790"))]
+    pub fn GetProcessId(handle: HANDLE) -> DWORD {
+        0
+    }
     pub fn CreateSymbolicLinkW(_lpSymlinkFileName: LPCWSTR,
                                _lpTargetFileName: LPCWSTR,
                                _dwFlags: DWORD) -> BOOLEAN {
