@@ -705,9 +705,11 @@ if #[cfg(not(target_vendor = "uwp"))] {
         pub fn GetConsoleMode(hConsoleHandle: HANDLE,
                               lpMode: LPDWORD) -> BOOL;
         // Allowed but unused by UWP
+        #[cfg(target_api_feature = "4.0.1381")]
         pub fn OpenProcessToken(ProcessHandle: HANDLE,
                                 DesiredAccess: DWORD,
                                 TokenHandle: *mut HANDLE) -> BOOL;
+        #[cfg(target_api_feature = "4.0.1381")]
         pub fn GetUserProfileDirectoryW(hToken: HANDLE,
                                         lpProfileDir: LPWSTR,
                                         lpcchSize: *mut DWORD) -> BOOL;
@@ -727,6 +729,27 @@ if #[cfg(not(target_vendor = "uwp"))] {
                                lpTargetFileName: LPCWSTR,
                                lpSecurityAttributes: LPSECURITY_ATTRIBUTES)
                                -> BOOL;
+    }
+
+    compat_fn! {
+        advapi32:
+        // Allowed but unused by UWP
+        #[cfg(not(target_api_feature = "4.0.1381"))]
+        pub fn OpenProcessToken(ProcessHandle: HANDLE,
+                                DesiredAccess: DWORD,
+                                TokenHandle: *mut HANDLE) -> BOOL {
+            SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD); 0
+        }
+    }
+
+    compat_fn! {
+        userenv:
+        #[cfg(not(target_api_feature = "4.0.1381"))]
+        pub fn GetUserProfileDirectoryW(hToken: HANDLE,
+                                        lpProfileDir: LPWSTR,
+                                        lpcchSize: *mut DWORD) -> BOOL {
+            SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD); 0
+        }
     }
 }
 }
