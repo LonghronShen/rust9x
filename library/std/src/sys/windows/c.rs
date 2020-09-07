@@ -819,6 +819,7 @@ extern "system" {
     pub fn ioctlsocket(s: SOCKET, cmd: c_long, argp: *mut c_ulong) -> c_int;
     pub fn InitializeCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn EnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
+    #[cfg(target_api_feature = "4.0.1381")]
     pub fn TryEnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION) -> BOOL;
     pub fn LeaveCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn DeleteCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
@@ -1051,6 +1052,41 @@ extern "system" {
 }
 
 cfg_if::cfg_if! {
+if #[cfg(target_api_feature = "6.0.6000")] {
+    extern "system" {
+        pub fn AcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> ();
+        pub fn AcquireSRWLockShared(SRWLock: PSRWLOCK) -> ();
+        pub fn ReleaseSRWLockExclusive(SRWLock: PSRWLOCK) -> ();
+        pub fn ReleaseSRWLockShared(SRWLock: PSRWLOCK) -> ();
+        pub fn TryAcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> BOOLEAN;
+        pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN;
+    }
+} else {
+    compat_fn! {
+        kernel32:
+        pub fn AcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
+            panic!("rwlocks not available")
+        }
+        pub fn AcquireSRWLockShared(SRWLock: PSRWLOCK) -> () {
+            panic!("rwlocks not available")
+        }
+        pub fn ReleaseSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
+            panic!("rwlocks not available")
+        }
+        pub fn ReleaseSRWLockShared(SRWLock: PSRWLOCK) -> () {
+            panic!("rwlocks not available")
+        }
+        pub fn TryAcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> BOOLEAN {
+            panic!("rwlocks not available")
+        }
+        pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN {
+            panic!("rwlocks not available")
+        }
+    }
+}
+}
+
+cfg_if::cfg_if! {
 if #[cfg(target_api_feature = "5.1.2600")] {
     extern "system" {
         pub fn getaddrinfo(
@@ -1128,23 +1164,10 @@ compat_fn! {
                                     -> () {
         panic!("condition variables not available")
     }
-    pub fn AcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
-        panic!("rwlocks not available")
-    }
-    pub fn AcquireSRWLockShared(SRWLock: PSRWLOCK) -> () {
-        panic!("rwlocks not available")
-    }
-    pub fn ReleaseSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
-        panic!("rwlocks not available")
-    }
-    pub fn ReleaseSRWLockShared(SRWLock: PSRWLOCK) -> () {
-        panic!("rwlocks not available")
-    }
-    pub fn TryAcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> BOOLEAN {
-        panic!("rwlocks not available")
-    }
-    pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN {
-        panic!("rwlocks not available")
+
+    #[cfg(not(target_api_feature = "4.0.1381"))]
+    pub fn TryEnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION) -> BOOL {
+        panic!("TryEnterCriticalSection not available")
     }
 }
 
@@ -1171,5 +1194,19 @@ if #[cfg(all(not(target_vendor = "uwp"), not(target_api_feature = "5.1.2600")))]
     pub const RtlGenRandom: unsafe fn(
         RandomBuffer: *mut u8,
         RandomBufferLength: ULONG) -> BOOLEAN = SystemFunction036;
+}
+}
+
+cfg_if::cfg_if! {
+if #[cfg(not(target_api_feature = "4.0.1381"))] {
+    extern "system" {
+        pub fn CreateMutexA(
+            lpMutexAttributes: LPSECURITY_ATTRIBUTES,
+            bInitialOwner: BOOL,
+            lpName: LPCSTR,
+        ) -> HANDLE;
+
+        pub fn ReleaseMutex(hMutex: HANDLE) -> BOOL;
+    }
 }
 }
