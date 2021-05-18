@@ -78,7 +78,7 @@ fn test_env_set_var() {
 }
 
 #[test]
-#[cfg_attr(not(any(unix, windows)), ignore, allow(unused))]
+#[cfg_attr(not(any(unix, all(windows, not(target_vendor = "oldpc")))), ignore, allow(unused))]
 #[allow(deprecated)]
 fn env_home_dir() {
     use std::path::PathBuf;

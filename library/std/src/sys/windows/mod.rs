@@ -288,6 +288,9 @@ cfg_if::cfg_if! {
         // For BCryptGenRandom
         #[link(name = "bcrypt")]
         extern "C" {}
+    } else if #[cfg(target_vendor = "oldpc")] {
+        #[link(name = "ws2_32")]
+        extern "C" {}
     } else {
         #[link(name = "advapi32")]
         #[link(name = "ws2_32")]

@@ -9,6 +9,8 @@ use crate::ptr;
 
 use libc::{c_void, size_t, wchar_t};
 
+mod wspiapi;
+
 pub use self::EXCEPTION_DISPOSITION::*;
 pub use self::FILE_INFO_BY_HANDLE_CLASS::*;
 
@@ -701,13 +703,6 @@ if #[cfg(not(target_vendor = "uwp"))] {
 
         pub fn GetConsoleMode(hConsoleHandle: HANDLE,
                               lpMode: LPDWORD) -> BOOL;
-        // Allowed but unused by UWP
-        pub fn OpenProcessToken(ProcessHandle: HANDLE,
-                                DesiredAccess: DWORD,
-                                TokenHandle: *mut HANDLE) -> BOOL;
-        pub fn GetUserProfileDirectoryW(hToken: HANDLE,
-                                        lpProfileDir: LPWSTR,
-                                        lpcchSize: *mut DWORD) -> BOOL;
         pub fn GetFileInformationByHandle(hFile: HANDLE,
                             lpFileInformation: LPBY_HANDLE_FILE_INFORMATION)
                             -> BOOL;
@@ -1267,9 +1262,30 @@ compat_fn_lazy! {
     pub fn SystemFunction036(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN {
         0
     }
+
+    // NT 3.1+ only
+    // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocesstoken
+    pub fn OpenProcessToken(ProcessHandle: HANDLE,
+        DesiredAccess: DWORD,
+        TokenHandle: *mut HANDLE) -> BOOL {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
+        FALSE
+    }
 }
 
 #[inline(always)]
 pub unsafe fn RtlGenRandom(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN {
     SystemFunction036(RandomBuffer, RandomBufferLength)
+}
+
+compat_fn_lazy! {
+    "userenv":{unicows: false, load: true}:
+
+    // >= NT 4
+    // https://docs.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-getuserprofiledirectoryw
+    pub fn GetUserProfileDirectoryW(hToken: HANDLE,
+        lpProfileDir: LPWSTR,
+        lpcchSize: *mut DWORD) -> BOOL {
+        panic!("unavailable")
+    }
 }
