@@ -67,7 +67,8 @@ macro_rules! compat_fn {
             /// This static can be an ordinary, unsynchronized, mutable static because
             /// we guarantee that all of the writes finish during CRT initialization,
             /// and all of the reads occur after CRT initialization.
-            static mut PTR: Option<F> = None;
+            static mut PTR: F = fallback;
+            static mut AVAILABLE: bool = false;
 
             /// This symbol is what allows the CRT to find the `init` function and call it.
             /// It is marked `#[used]` because otherwise Rust would assume that it was not
@@ -91,7 +92,8 @@ macro_rules! compat_fn {
                     match $crate::sys::c::GetProcAddress(module_handle, symbol_name as *const i8) as usize {
                         0 => {}
                         n => {
-                            PTR = Some(mem::transmute::<usize, F>(n));
+                            PTR = mem::transmute::<usize, F>(n);
+                            AVAILABLE = true;
                         }
                     }
                 }
@@ -99,16 +101,32 @@ macro_rules! compat_fn {
 
             #[allow(dead_code)]
             pub fn option() -> Option<F> {
-                unsafe { PTR }
+                unsafe {
+                    if AVAILABLE {
+                        Some(PTR)
+                    } else {
+                        None
+                    }
+                }
             }
 
             #[allow(dead_code)]
+            #[inline(always)]
+            pub fn available() -> bool {
+                unsafe { AVAILABLE }
+            }
+
+            #[allow(dead_code)]
+            #[inline(always)]
             pub unsafe fn call($($argname: $argtype),*) -> $rettype {
-                if let Some(ptr) = PTR {
-                    ptr($($argname),*)
-                } else {
-                    $fallback_body
-                }
+                PTR($($argname),*)
+            }
+
+            #[allow(dead_code)]
+            unsafe extern "system" fn fallback(
+                $(#[allow(unused_variables)] $argname: $argtype),*
+            ) -> $rettype {
+                $fallback_body
             }
         }
 
