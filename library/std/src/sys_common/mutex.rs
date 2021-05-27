@@ -9,14 +9,24 @@ use crate::sys::mutex as imp;
 ///
 /// This is a wrapper around `imp::Mutex` that does *not* call `init()` and
 /// `destroy()`.
+#[cfg(not(windows))]
 pub struct StaticMutex(imp::Mutex);
+
+#[cfg(windows)]
+pub struct StaticMutex(imp::StaticMutex);
 
 unsafe impl Sync for StaticMutex {}
 
 impl StaticMutex {
     /// Creates a new mutex for use.
+    #[cfg(not(windows))]
     pub const fn new() -> Self {
         Self(imp::Mutex::new())
+    }
+
+    #[cfg(windows)]
+    pub const fn new() -> Self {
+        Self(imp::StaticMutex::new())
     }
 
     /// Calls raw_lock() and then returns an RAII guard to guarantee the mutex
@@ -31,8 +41,13 @@ impl StaticMutex {
     }
 }
 
+#[cfg(not(windows))]
 #[must_use]
 pub struct StaticMutexGuard(&'static imp::Mutex);
+
+#[cfg(windows)]
+#[must_use]
+pub struct StaticMutexGuard(&'static imp::StaticMutex);
 
 impl Drop for StaticMutexGuard {
     #[inline]

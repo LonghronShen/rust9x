@@ -790,7 +790,6 @@ extern "system" {
     pub fn ioctlsocket(s: SOCKET, cmd: c_long, argp: *mut c_ulong) -> c_int;
     pub fn InitializeCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn EnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
-    pub fn TryEnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION) -> BOOL;
     pub fn LeaveCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn DeleteCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
 
@@ -1037,29 +1036,6 @@ extern "system" {
         lpFileInformation: LPVOID,
         dwBufferSize: DWORD,
     ) -> BOOL;
-
-    // >= Vista / Server 2008
-    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleepconditionvariablesrw
-    pub fn SleepConditionVariableSRW(
-        ConditionVariable: PCONDITION_VARIABLE,
-        SRWLock: PSRWLOCK,
-        dwMilliseconds: DWORD,
-        Flags: ULONG,
-    ) -> BOOL;
-
-    // >= Vista / Server 2008
-    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-wakeconditionvariable
-    pub fn WakeConditionVariable(ConditionVariable: PCONDITION_VARIABLE);
-    pub fn WakeAllConditionVariable(ConditionVariable: PCONDITION_VARIABLE);
-
-    // >= Vista / Server 2008
-    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-acquiresrwlockexclusive
-    pub fn AcquireSRWLockExclusive(SRWLock: PSRWLOCK);
-    pub fn AcquireSRWLockShared(SRWLock: PSRWLOCK);
-    pub fn ReleaseSRWLockExclusive(SRWLock: PSRWLOCK);
-    pub fn ReleaseSRWLockShared(SRWLock: PSRWLOCK);
-    pub fn TryAcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> BOOLEAN;
-    pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN;
 }
 
 // Functions that aren't available on every version of Windows that we support,
@@ -1146,4 +1122,72 @@ compat_fn! {
         -> LPVOID {
         panic!("unavailable")
     }
+
+    // >= NT 4
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-tryentercriticalsection
+    pub fn TryEnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION) -> BOOL {
+        panic!("unavailable")
+    }
+
+    // >= Vista / Server 2008
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-acquiresrwlockexclusive
+    pub fn AcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
+        panic!("unavailable")
+    }
+    pub fn AcquireSRWLockShared(SRWLock: PSRWLOCK) -> () {
+        panic!("unavailable")
+    }
+    pub fn ReleaseSRWLockExclusive(SRWLock: PSRWLOCK) -> () {
+        panic!("unavailable")
+    }
+    pub fn ReleaseSRWLockShared(SRWLock: PSRWLOCK) -> () {
+        panic!("unavailable")
+    }
+    // >= Win7 / Server 2008 R2
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-tryacquiresrwlockexclusive
+    pub fn TryAcquireSRWLockExclusive(SRWLock: PSRWLOCK) -> BOOLEAN {
+        panic!("unavailable")
+    }
+    pub fn TryAcquireSRWLockShared(SRWLock: PSRWLOCK) -> BOOLEAN {
+        panic!("unavailable")
+    }
+
+     // >= Vista / Server 2008
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleepconditionvariablesrw
+    pub fn SleepConditionVariableSRW(
+        ConditionVariable: PCONDITION_VARIABLE,
+        SRWLock: PSRWLOCK,
+        dwMilliseconds: DWORD,
+        Flags: ULONG
+    ) -> BOOL {
+        panic!("unavailable")
+    }
+
+    // >= Vista / Server 2008
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-wakeconditionvariable
+    pub fn WakeConditionVariable(ConditionVariable: PCONDITION_VARIABLE) -> () {
+        panic!("unavailable")
+    }
+    pub fn WakeAllConditionVariable(ConditionVariable: PCONDITION_VARIABLE) -> () {
+        panic!("unavailable")
+    }
+}
+
+extern "system" {
+    pub fn CreateMutexA(
+        lpMutexAttributes: LPSECURITY_ATTRIBUTES,
+        bInitialOwner: BOOL,
+        lpName: LPCSTR,
+    ) -> HANDLE;
+
+    pub fn ReleaseMutex(hMutex: HANDLE) -> BOOL;
+
+    pub fn CreateEventA(
+        lpEventAttributes: LPSECURITY_ATTRIBUTES,
+        bManualReset: BOOL,
+        bInitialState: BOOL,
+        lpName: LPCSTR,
+    ) -> HANDLE;
+
+    pub fn PulseEvent(hEvent: HANDLE) -> BOOL;
 }
