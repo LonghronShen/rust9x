@@ -823,7 +823,6 @@ extern "system" {
     pub fn WaitForSingleObject(hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
     pub fn SwitchToThread() -> BOOL;
     pub fn Sleep(dwMilliseconds: DWORD);
-    pub fn GetProcessId(handle: HANDLE) -> DWORD;
     pub fn CopyFileExW(
         lpExistingFileName: LPCWSTR,
         lpNewFileName: LPCWSTR,
@@ -1170,6 +1169,12 @@ compat_fn! {
     }
     pub fn WakeAllConditionVariable(ConditionVariable: PCONDITION_VARIABLE) -> () {
         panic!("unavailable")
+    }
+
+    // >= XP SP1 / Vista / Server 2003
+    // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocessid
+    pub fn GetProcessId(handle: HANDLE) -> DWORD {
+        handle as DWORD
     }
 }
 
