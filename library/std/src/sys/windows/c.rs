@@ -971,8 +971,6 @@ extern "system" {
     pub fn GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE;
     pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
 
-    pub fn GetSystemTimeAsFileTime(lpSystemTimeAsFileTime: LPFILETIME);
-
     pub fn CreateEventW(
         lpEventAttributes: LPSECURITY_ATTRIBUTES,
         bManualReset: BOOL,
@@ -1176,6 +1174,14 @@ compat_fn! {
     pub fn GetProcessId(handle: HANDLE) -> DWORD {
         handle as DWORD
     }
+
+    pub fn GetSystemTimeAsFileTime(lpSystemTimeAsFileTime: LPFILETIME) -> () {
+        // implementation based on old MSDN docs
+        let mut st: SYSTEMTIME = crate::mem::zeroed();
+        GetSystemTime(&mut st);
+        crate::sys::cvt(SystemTimeToFileTime(&st, lpSystemTimeAsFileTime)).unwrap();
+    }
+
 }
 
 extern "system" {
@@ -1195,4 +1201,21 @@ extern "system" {
     ) -> HANDLE;
 
     pub fn PulseEvent(hEvent: HANDLE) -> BOOL;
+
+    pub fn GetSystemTime(lpSystemTime: LPSYSTEMTIME);
+    pub fn SystemTimeToFileTime(lpSystemTime: *const SYSTEMTIME, lpFileTime: LPFILETIME) -> BOOL;
 }
+
+#[repr(C)]
+pub struct SYSTEMTIME {
+    wYear: WORD,
+    wMonth: WORD,
+    wDayOfWeek: WORD,
+    wDay: WORD,
+    wHour: WORD,
+    wMinute: WORD,
+    wSecond: WORD,
+    wMilliseconds: WORD,
+}
+
+pub type LPSYSTEMTIME = *mut SYSTEMTIME;
