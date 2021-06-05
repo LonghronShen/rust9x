@@ -687,9 +687,6 @@ if #[cfg(not(target_vendor = "uwp"))] {
     pub const TOKEN_READ: DWORD = 0x20008;
 
     extern "system" {
-        #[link_name = "SystemFunction036"]
-        pub fn RtlGenRandom(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN;
-
         pub fn ReadConsoleW(hConsoleInput: HANDLE,
                             lpBuffer: LPVOID,
                             nNumberOfCharsToRead: DWORD,
@@ -1242,6 +1239,8 @@ extern "system" {
         lpDistanceToMoveHigh: *mut LONG,
         dwMoveMethod: DWORD,
     ) -> DWORD;
+
+    pub fn LoadLibraryA(lpFileName: LPCSTR) -> HMODULE;
 }
 
 #[repr(C)]
@@ -1260,3 +1259,17 @@ pub type LPSYSTEMTIME = *mut SYSTEMTIME;
 
 pub const INVALID_SET_FILE_POINTER: DWORD = 0xFFFFFFFF;
 pub const NO_ERROR: DWORD = 0;
+
+compat_fn_lazy! {
+    "advapi32":{unicows: false, load: true}:
+
+    // RtlGenRandom
+    pub fn SystemFunction036(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN {
+        0
+    }
+}
+
+#[inline(always)]
+pub unsafe fn RtlGenRandom(RandomBuffer: *mut u8, RandomBufferLength: ULONG) -> BOOLEAN {
+    SystemFunction036(RandomBuffer, RandomBufferLength)
+}
