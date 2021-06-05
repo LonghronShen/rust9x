@@ -85,8 +85,23 @@ macro_rules! compat_fn {
                 // any Rust functions or CRT functions, if those functions touch any global state,
                 // because this function runs during global initialization. For example, DO NOT
                 // do any dynamic allocation, don't call LoadLibrary, etc.
-                let module_name: *const u8 = concat!($module, "\0").as_ptr();
+
                 let symbol_name: *const u8 = concat!(stringify!($symbol), "\0").as_ptr();
+
+                let unicows_module_name: *const u8 = concat!("unicows", "\0").as_ptr();
+                let unicows_handle = $crate::sys::c::GetModuleHandleA(unicows_module_name as *const i8);
+                if !unicows_handle.is_null() {
+                    match $crate::sys::c::GetProcAddress(unicows_handle, symbol_name as *const i8) as usize {
+                        0 => {}
+                        n => {
+                            PTR = mem::transmute::<usize, F>(n);
+                            AVAILABLE = true;
+                            return;
+                        }
+                    }
+                }
+
+                let module_name: *const u8 = concat!($module, "\0").as_ptr();
                 let module_handle = $crate::sys::c::GetModuleHandleA(module_name as *const i8);
                 if !module_handle.is_null() {
                     match $crate::sys::c::GetProcAddress(module_handle, symbol_name as *const i8) as usize {
