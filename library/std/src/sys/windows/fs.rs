@@ -309,16 +309,45 @@ impl File {
     }
 
     pub fn truncate(&self, size: u64) -> io::Result<()> {
-        let mut info = c::FILE_END_OF_FILE_INFO { EndOfFile: size as c::LARGE_INTEGER };
-        let size = mem::size_of_val(&info);
-        cvt(unsafe {
-            c::SetFileInformationByHandle(
-                self.handle.raw(),
-                c::FileEndOfFileInfo,
-                &mut info as *mut _ as *mut _,
-                size as c::DWORD,
-            )
-        })?;
+        if c::SetFileInformationByHandle::available() {
+            let mut info = c::FILE_END_OF_FILE_INFO { EndOfFile: size as c::LARGE_INTEGER };
+            let size = mem::size_of_val(&info);
+
+            cvt(unsafe {
+                c::SetFileInformationByHandle(
+                    self.handle.raw(),
+                    c::FileEndOfFileInfo,
+                    &mut info as *mut _ as *mut _,
+                    size as c::DWORD,
+                )
+            })?;
+        } else {
+            let mut saved_pos = 0;
+            unsafe {
+                // get current file pointer position
+                cvt(c::SetFilePointerEx(self.handle.raw(), 0, &mut saved_pos, c::FILE_CURRENT))?;
+
+                // seek to new end position
+                cvt(c::SetFilePointerEx(
+                    self.handle.raw(),
+                    size as c::LARGE_INTEGER,
+                    ptr::null_mut(),
+                    c::FILE_BEGIN,
+                ))?;
+
+                // set current position as end of file
+                cvt(c::SetEndOfFile(self.handle.raw()))?;
+
+                // go back to saved position
+                cvt(c::SetFilePointerEx(
+                    self.handle.raw(),
+                    saved_pos as c::LARGE_INTEGER,
+                    ptr::null_mut(),
+                    c::FILE_BEGIN,
+                ))?;
+            }
+        }
+
         Ok(())
     }
 
