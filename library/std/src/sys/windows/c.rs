@@ -1236,6 +1236,8 @@ extern "system" {
     ) -> DWORD;
 
     pub fn LoadLibraryA(lpFileName: LPCSTR) -> HMODULE;
+
+    pub fn GetTickCount() -> DWORD;
 }
 
 #[repr(C)]
