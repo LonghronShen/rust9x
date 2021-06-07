@@ -50,7 +50,7 @@ pub type LPVOID = *mut c_void;
 pub type LPWCH = *mut WCHAR;
 pub type LPWIN32_FIND_DATAW = *mut WIN32_FIND_DATAW;
 pub type LPWSADATA = *mut WSADATA;
-pub type LPWSAPROTOCOL_INFO = *mut WSAPROTOCOL_INFO;
+pub type LPWSAPROTOCOL_INFOA = *mut WSAPROTOCOL_INFOA;
 pub type LPWSTR = *mut WCHAR;
 pub type LPFILETIME = *mut FILETIME;
 pub type LPWSABUF = *mut WSABUF;
@@ -320,7 +320,7 @@ pub struct WSABUF {
 }
 
 #[repr(C)]
-pub struct WSAPROTOCOL_INFO {
+pub struct WSAPROTOCOL_INFOA {
     pub dwServiceFlags1: DWORD,
     pub dwServiceFlags2: DWORD,
     pub dwServiceFlags3: DWORD,
@@ -340,7 +340,7 @@ pub struct WSAPROTOCOL_INFO {
     pub iSecurityScheme: c_int,
     pub dwMessageSize: DWORD,
     pub dwProviderReserved: DWORD,
-    pub szProtocol: [u16; (WSAPROTOCOL_LEN as usize) + 1],
+    pub szProtocol: [u8; (WSAPROTOCOL_LEN as usize) + 1],
 }
 
 #[repr(C)]
@@ -706,9 +706,6 @@ if #[cfg(not(target_vendor = "uwp"))] {
         pub fn GetFileInformationByHandle(hFile: HANDLE,
                             lpFileInformation: LPBY_HANDLE_FILE_INFORMATION)
                             -> BOOL;
-        pub fn SetHandleInformation(hObject: HANDLE,
-                                    dwMask: DWORD,
-                                    dwFlags: DWORD) -> BOOL;
         pub fn CreateHardLinkW(lpSymlinkFileName: LPCWSTR,
                                lpTargetFileName: LPCWSTR,
                                lpSecurityAttributes: LPSECURITY_ATTRIBUTES)
@@ -744,42 +741,7 @@ if #[cfg(target_vendor = "uwp")] {
 
 // Shared between Desktop & UWP
 extern "system" {
-    pub fn WSAStartup(wVersionRequested: WORD, lpWSAData: LPWSADATA) -> c_int;
-    pub fn WSACleanup() -> c_int;
-    pub fn WSAGetLastError() -> c_int;
-    pub fn WSADuplicateSocketW(
-        s: SOCKET,
-        dwProcessId: DWORD,
-        lpProtocolInfo: LPWSAPROTOCOL_INFO,
-    ) -> c_int;
-    pub fn WSASend(
-        s: SOCKET,
-        lpBuffers: LPWSABUF,
-        dwBufferCount: DWORD,
-        lpNumberOfBytesSent: LPDWORD,
-        dwFlags: DWORD,
-        lpOverlapped: LPWSAOVERLAPPED,
-        lpCompletionRoutine: LPWSAOVERLAPPED_COMPLETION_ROUTINE,
-    ) -> c_int;
-    pub fn WSARecv(
-        s: SOCKET,
-        lpBuffers: LPWSABUF,
-        dwBufferCount: DWORD,
-        lpNumberOfBytesRecvd: LPDWORD,
-        lpFlags: LPDWORD,
-        lpOverlapped: LPWSAOVERLAPPED,
-        lpCompletionRoutine: LPWSAOVERLAPPED_COMPLETION_ROUTINE,
-    ) -> c_int;
     pub fn GetCurrentProcessId() -> DWORD;
-    pub fn WSASocketW(
-        af: c_int,
-        kind: c_int,
-        protocol: c_int,
-        lpProtocolInfo: LPWSAPROTOCOL_INFO,
-        g: GROUP,
-        dwFlags: DWORD,
-    ) -> SOCKET;
-    pub fn ioctlsocket(s: SOCKET, cmd: c_long, argp: *mut c_ulong) -> c_int;
     pub fn InitializeCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn EnterCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
     pub fn LeaveCriticalSection(CriticalSection: *mut CRITICAL_SECTION);
@@ -865,27 +827,6 @@ extern "system" {
     pub fn GetCurrentDirectoryW(nBufferLength: DWORD, lpBuffer: LPWSTR) -> DWORD;
     pub fn SetCurrentDirectoryW(lpPathName: LPCWSTR) -> BOOL;
 
-    pub fn closesocket(socket: SOCKET) -> c_int;
-    pub fn recv(socket: SOCKET, buf: *mut c_void, len: c_int, flags: c_int) -> c_int;
-    pub fn send(socket: SOCKET, buf: *const c_void, len: c_int, flags: c_int) -> c_int;
-    pub fn recvfrom(
-        socket: SOCKET,
-        buf: *mut c_void,
-        len: c_int,
-        flags: c_int,
-        addr: *mut SOCKADDR,
-        addrlen: *mut c_int,
-    ) -> c_int;
-    pub fn sendto(
-        socket: SOCKET,
-        buf: *const c_void,
-        len: c_int,
-        flags: c_int,
-        addr: *const SOCKADDR,
-        addrlen: c_int,
-    ) -> c_int;
-    pub fn shutdown(socket: SOCKET, how: c_int) -> c_int;
-    pub fn accept(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> SOCKET;
     pub fn DuplicateHandle(
         hSourceProcessHandle: HANDLE,
         hSourceHandle: HANDLE,
@@ -927,32 +868,6 @@ extern "system" {
     pub fn FindFirstFileW(fileName: LPCWSTR, findFileData: LPWIN32_FIND_DATAW) -> HANDLE;
     pub fn FindNextFileW(findFile: HANDLE, findFileData: LPWIN32_FIND_DATAW) -> BOOL;
     pub fn FindClose(findFile: HANDLE) -> BOOL;
-    pub fn getsockopt(
-        s: SOCKET,
-        level: c_int,
-        optname: c_int,
-        optval: *mut c_char,
-        optlen: *mut c_int,
-    ) -> c_int;
-    pub fn setsockopt(
-        s: SOCKET,
-        level: c_int,
-        optname: c_int,
-        optval: *const c_void,
-        optlen: c_int,
-    ) -> c_int;
-    pub fn getsockname(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> c_int;
-    pub fn getpeername(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> c_int;
-    pub fn bind(socket: SOCKET, address: *const SOCKADDR, address_len: socklen_t) -> c_int;
-    pub fn listen(socket: SOCKET, backlog: c_int) -> c_int;
-    pub fn connect(socket: SOCKET, address: *const SOCKADDR, len: c_int) -> c_int;
-    pub fn getaddrinfo(
-        node: *const c_char,
-        service: *const c_char,
-        hints: *const ADDRINFOA,
-        res: *mut *mut ADDRINFOA,
-    ) -> c_int;
-    pub fn freeaddrinfo(res: *mut ADDRINFOA);
 
     pub fn GetProcAddress(handle: HMODULE, name: LPCSTR) -> *mut c_void;
     pub fn GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE;
@@ -987,14 +902,6 @@ extern "system" {
         lpNumberOfBytesTransferred: LPDWORD,
         bWait: BOOL,
     ) -> BOOL;
-    pub fn select(
-        nfds: c_int,
-        readfds: *mut fd_set,
-        writefds: *mut fd_set,
-        exceptfds: *mut fd_set,
-        timeout: *const timeval,
-    ) -> c_int;
-
 }
 
 // Functions that aren't available on every version of Windows that we support,
@@ -1203,6 +1110,15 @@ compat_fn! {
 
         TRUE
     }
+
+    // NT 3.51+
+    // https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-sethandleinformation
+    pub fn SetHandleInformation(hObject: HANDLE,
+        dwMask: DWORD,
+        dwFlags: DWORD) -> BOOL {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
+        FALSE
+    }
 }
 
 extern "system" {
@@ -1289,5 +1205,175 @@ compat_fn_lazy! {
         lpProfileDir: LPWSTR,
         lpcchSize: *mut DWORD) -> BOOL {
         panic!("unavailable")
+    }
+}
+
+compat_fn_lazy! {
+    "ws2_32":{unicows: false, load: true}:
+
+    pub fn WSAStartup(wVersionRequested: WORD, lpWSAData: LPWSADATA) -> c_int {
+        0
+    }
+    pub fn WSACleanup() -> c_int {
+        0
+    }
+    pub fn WSAGetLastError() -> c_int {
+        panic!("unavailable")
+    }
+    pub fn WSADuplicateSocketA(
+        s: SOCKET,
+        dwProcessId: DWORD,
+        lpProtocolInfo: LPWSAPROTOCOL_INFOA
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn WSASend(
+        s: SOCKET,
+        lpBuffers: LPWSABUF,
+        dwBufferCount: DWORD,
+        lpNumberOfBytesSent: LPDWORD,
+        dwFlags: DWORD,
+        lpOverlapped: LPWSAOVERLAPPED,
+        lpCompletionRoutine: LPWSAOVERLAPPED_COMPLETION_ROUTINE
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn WSARecv(
+        s: SOCKET,
+        lpBuffers: LPWSABUF,
+        dwBufferCount: DWORD,
+        lpNumberOfBytesRecvd: LPDWORD,
+        lpFlags: LPDWORD,
+        lpOverlapped: LPWSAOVERLAPPED,
+        lpCompletionRoutine: LPWSAOVERLAPPED_COMPLETION_ROUTINE
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn WSASocketA(
+        af: c_int,
+        kind: c_int,
+        protocol: c_int,
+        lpProtocolInfo: LPWSAPROTOCOL_INFOA,
+        g: GROUP,
+        dwFlags: DWORD
+    ) -> SOCKET {
+        panic!("unavailable")
+    }
+    pub fn ioctlsocket(s: SOCKET, cmd: c_long, argp: *mut c_ulong) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn closesocket(socket: SOCKET) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn recv(socket: SOCKET, buf: *mut c_void, len: c_int, flags: c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn send(socket: SOCKET, buf: *const c_void, len: c_int, flags: c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn recvfrom(
+        socket: SOCKET,
+        buf: *mut c_void,
+        len: c_int,
+        flags: c_int,
+        addr: *mut SOCKADDR,
+        addrlen: *mut c_int
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn sendto(
+        socket: SOCKET,
+        buf: *const c_void,
+        len: c_int,
+        flags: c_int,
+        addr: *const SOCKADDR,
+        addrlen: c_int
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn shutdown(socket: SOCKET, how: c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn accept(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> SOCKET {
+        panic!("unavailable")
+    }
+    pub fn getsockopt(
+        s: SOCKET,
+        level: c_int,
+        optname: c_int,
+        optval: *mut c_char,
+        optlen: *mut c_int
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn setsockopt(
+        s: SOCKET,
+        level: c_int,
+        optname: c_int,
+        optval: *const c_void,
+        optlen: c_int
+    ) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn getsockname(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn getpeername(socket: SOCKET, address: *mut SOCKADDR, address_len: *mut c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn bind(socket: SOCKET, address: *const SOCKADDR, address_len: socklen_t) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn listen(socket: SOCKET, backlog: c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn connect(socket: SOCKET, address: *const SOCKADDR, len: c_int) -> c_int {
+        panic!("unavailable")
+    }
+    pub fn select(
+        nfds: c_int,
+        readfds: *mut fd_set,
+        writefds: *mut fd_set,
+        exceptfds: *mut fd_set,
+        timeout: *const timeval
+    ) -> c_int {
+        panic!("unavailable")
+    }
+
+    // >= XP / Server 2003
+    pub fn getaddrinfo(
+        node: *const c_char,
+        service: *const c_char,
+        hints: *const ADDRINFOA,
+        res: *mut *mut ADDRINFOA
+    ) -> c_int {
+        wship6::getaddrinfo(node, service, hints, res)
+    }
+    // >= XP / Server 2003
+    pub fn freeaddrinfo(res: *mut ADDRINFOA) -> () {
+        wship6::freeaddrinfo(res)
+    }
+}
+
+mod wship6 {
+    use super::wspiapi::{wspiapi_freeaddrinfo, wspiapi_getaddrinfo};
+    use super::{c_char, c_int, ADDRINFOA};
+
+    compat_fn_lazy! {
+        "wship6":{unicows: false, load: true}:
+
+        // >= NT4/2000 with IPv6 Tech Preview
+        pub fn getaddrinfo(
+            node: *const c_char,
+            service: *const c_char,
+            hints: *const ADDRINFOA,
+            res: *mut *mut ADDRINFOA
+        ) -> c_int {
+            wspiapi_getaddrinfo(node, service, hints, res)
+        }
+        // >= NT4/2000 with IPv6 Tech Preview
+        pub fn freeaddrinfo(res: *mut ADDRINFOA) -> () {
+            wspiapi_freeaddrinfo(res)
+        }
     }
 }

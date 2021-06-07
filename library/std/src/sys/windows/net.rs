@@ -98,7 +98,7 @@ impl Socket {
             SocketAddr::V6(..) => c::AF_INET6,
         };
         let socket = unsafe {
-            match c::WSASocketW(
+            match c::WSASocketA(
                 fam,
                 ty,
                 0,
@@ -108,7 +108,7 @@ impl Socket {
             ) {
                 c::INVALID_SOCKET => match c::WSAGetLastError() {
                     c::WSAEPROTOTYPE | c::WSAEINVAL => {
-                        match c::WSASocketW(fam, ty, 0, ptr::null_mut(), 0, c::WSA_FLAG_OVERLAPPED)
+                        match c::WSASocketA(fam, ty, 0, ptr::null_mut(), 0, c::WSA_FLAG_OVERLAPPED)
                         {
                             c::INVALID_SOCKET => Err(last_error()),
                             n => {
@@ -193,10 +193,10 @@ impl Socket {
 
     pub fn duplicate(&self) -> io::Result<Socket> {
         let socket = unsafe {
-            let mut info: c::WSAPROTOCOL_INFO = mem::zeroed();
-            cvt(c::WSADuplicateSocketW(self.0, c::GetCurrentProcessId(), &mut info))?;
+            let mut info: c::WSAPROTOCOL_INFOA = mem::zeroed();
+            cvt(c::WSADuplicateSocketA(self.0, c::GetCurrentProcessId(), &mut info))?;
 
-            match c::WSASocketW(
+            match c::WSASocketA(
                 info.iAddressFamily,
                 info.iSocketType,
                 info.iProtocol,
@@ -206,7 +206,7 @@ impl Socket {
             ) {
                 c::INVALID_SOCKET => match c::WSAGetLastError() {
                     c::WSAEPROTOTYPE | c::WSAEINVAL => {
-                        match c::WSASocketW(
+                        match c::WSASocketA(
                             info.iAddressFamily,
                             info.iSocketType,
                             info.iProtocol,
@@ -369,8 +369,14 @@ impl Socket {
 
     #[cfg(not(target_vendor = "uwp"))]
     fn set_no_inherit(&self) -> io::Result<()> {
-        sys::cvt(unsafe { c::SetHandleInformation(self.0 as c::HANDLE, c::HANDLE_FLAG_INHERIT, 0) })
+        if c::SetHandleInformation::available() {
+            sys::cvt(unsafe {
+                c::SetHandleInformation(self.0 as c::HANDLE, c::HANDLE_FLAG_INHERIT, 0)
+            })
             .map(drop)
+        } else {
+            Ok(())
+        }
     }
 
     #[cfg(target_vendor = "uwp")]
