@@ -706,10 +706,6 @@ if #[cfg(not(target_vendor = "uwp"))] {
         pub fn GetFileInformationByHandle(hFile: HANDLE,
                             lpFileInformation: LPBY_HANDLE_FILE_INFORMATION)
                             -> BOOL;
-        pub fn CreateHardLinkW(lpSymlinkFileName: LPCWSTR,
-                               lpTargetFileName: LPCWSTR,
-                               lpSecurityAttributes: LPSECURITY_ATTRIBUTES)
-                               -> BOOL;
     }
 }
 }
@@ -1116,6 +1112,16 @@ compat_fn! {
     pub fn SetHandleInformation(hObject: HANDLE,
         dwMask: DWORD,
         dwFlags: DWORD) -> BOOL {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
+        FALSE
+    }
+
+    // 2000+
+    // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createhardlinkw
+    pub fn CreateHardLinkW(lpSymlinkFileName: LPCWSTR,
+        lpTargetFileName: LPCWSTR,
+        lpSecurityAttributes: LPSECURITY_ATTRIBUTES)
+        -> BOOL {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
         FALSE
     }
