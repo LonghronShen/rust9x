@@ -771,7 +771,6 @@ extern "system" {
         lpThreadId: LPDWORD,
     ) -> HANDLE;
     pub fn WaitForSingleObject(hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
-    pub fn SwitchToThread() -> BOOL;
     pub fn Sleep(dwMilliseconds: DWORD);
     pub fn CopyFileExW(
         lpExistingFileName: LPCWSTR,
@@ -1124,6 +1123,17 @@ compat_fn! {
         -> BOOL {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
         FALSE
+    }
+
+    // NT 4+
+    // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-switchtothread
+    pub fn SwitchToThread() -> BOOL {
+        // A value of zero causes the thread to relinquish the remainder of its time slice to any
+        // other thread of equal priority that is ready to run. If there are no other threads of
+        // equal priority ready to run, the function returns immediately, and the thread continues
+        // execution.
+        Sleep(0);
+        TRUE
     }
 }
 
