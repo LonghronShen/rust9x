@@ -29,13 +29,17 @@ impl Thread {
         // Round up to the next 64 kB because that's what the NT kernel does,
         // might as well make it explicit.
         let stack_size = (stack + 0xfffe) & (!0xfffe);
+
+        // this is needed on 9X/ME - passing null_mut() is not allowed
+        let mut thread_id = 0;
+
         let ret = c::CreateThread(
             ptr::null_mut(),
             stack_size,
             thread_start,
             p as *mut _,
             c::STACK_SIZE_PARAM_IS_A_RESERVATION,
-            ptr::null_mut(),
+            &mut thread_id,
         );
 
         return if ret as usize == 0 {
