@@ -812,7 +812,6 @@ extern "system" {
     pub fn GetEnvironmentVariableW(n: LPCWSTR, v: LPWSTR, nsize: DWORD) -> DWORD;
     pub fn SetEnvironmentVariableW(n: LPCWSTR, v: LPCWSTR) -> BOOL;
     pub fn GetEnvironmentStringsW() -> LPWCH;
-    pub fn FreeEnvironmentStringsW(env_ptr: LPWCH) -> BOOL;
     pub fn GetModuleFileNameW(hModule: HMODULE, lpFilename: LPWSTR, nSize: DWORD) -> DWORD;
     pub fn CreateDirectoryW(
         lpPathName: LPCWSTR,
@@ -1133,6 +1132,13 @@ compat_fn! {
         // equal priority ready to run, the function returns immediately, and the thread continues
         // execution.
         Sleep(0);
+        TRUE
+    }
+
+    // NT 3.5+, 95+
+    // https://docs.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-freeenvironmentstringsw
+    pub fn FreeEnvironmentStringsW(env_ptr: LPWCH) -> BOOL {
+        // just leak it on NT 3.1
         TRUE
     }
 }
