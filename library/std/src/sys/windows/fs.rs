@@ -884,36 +884,78 @@ pub fn canonicalize(p: &Path) -> io::Result<PathBuf> {
 }
 
 pub fn copy(from: &Path, to: &Path) -> io::Result<u64> {
-    unsafe extern "system" fn callback(
-        _TotalFileSize: c::LARGE_INTEGER,
-        _TotalBytesTransferred: c::LARGE_INTEGER,
-        _StreamSize: c::LARGE_INTEGER,
-        StreamBytesTransferred: c::LARGE_INTEGER,
-        dwStreamNumber: c::DWORD,
-        _dwCallbackReason: c::DWORD,
-        _hSourceFile: c::HANDLE,
-        _hDestinationFile: c::HANDLE,
-        lpData: c::LPVOID,
-    ) -> c::DWORD {
-        if dwStreamNumber == 1 {
-            *(lpData as *mut i64) = StreamBytesTransferred;
-        }
-        c::PROGRESS_CONTINUE
-    }
     let pfrom = to_u16s(from)?;
     let pto = to_u16s(to)?;
-    let mut size = 0i64;
-    cvt(unsafe {
-        c::CopyFileExW(
-            pfrom.as_ptr(),
-            pto.as_ptr(),
-            Some(callback),
-            &mut size as *mut _ as *mut _,
-            ptr::null_mut(),
-            0,
-        )
-    })?;
-    Ok(size as u64)
+
+    if c::CopyFileExW::available() {
+        unsafe extern "system" fn callback(
+            _TotalFileSize: c::LARGE_INTEGER,
+            _TotalBytesTransferred: c::LARGE_INTEGER,
+            _StreamSize: c::LARGE_INTEGER,
+            StreamBytesTransferred: c::LARGE_INTEGER,
+            dwStreamNumber: c::DWORD,
+            _dwCallbackReason: c::DWORD,
+            _hSourceFile: c::HANDLE,
+            _hDestinationFile: c::HANDLE,
+            lpData: c::LPVOID,
+        ) -> c::DWORD {
+            if dwStreamNumber == 1 {
+                *(lpData as *mut i64) = StreamBytesTransferred;
+            }
+            c::PROGRESS_CONTINUE
+        }
+
+        let mut size = 0i64;
+        cvt(unsafe {
+            c::CopyFileExW(
+                pfrom.as_ptr(),
+                pto.as_ptr(),
+                Some(callback),
+                &mut size as *mut _ as *mut _,
+                ptr::null_mut(),
+                0,
+            )
+        })?;
+        Ok(size as u64)
+    } else {
+        // If `CopyFileExW` is not available, we have to copy the file with the non-Ex API,
+        // then open it with `dwDesiredAccess = 0` (query attributes only),
+        // then use `GetFileSize` to retrieve the size
+        cvt(unsafe {
+            c::CopyFileW(
+                pfrom.as_ptr(),
+                pto.as_ptr(),
+                c::FALSE, // FALSE: allow overwriting
+            )
+        })?;
+        let handle = unsafe {
+            c::CreateFileW(
+                pto.as_ptr(),
+                0,
+                c::FILE_SHARE_READ | c::FILE_SHARE_WRITE | c::FILE_SHARE_DELETE,
+                ptr::null_mut(),
+                c::OPEN_EXISTING,
+                0,
+                ptr::null_mut(),
+            )
+        };
+
+        if handle == c::INVALID_HANDLE_VALUE {
+            return Err(Error::last_os_error());
+        }
+
+        let mut upper_dword: c::DWORD = 0;
+        let lower_dword = unsafe { c::GetFileSize(handle, &mut upper_dword) };
+
+        if lower_dword == c::INVALID_FILE_SIZE {
+            let errno = crate::sys::os::errno();
+            if errno != c::STATUS_SUCCESS {
+                return Err(Error::from_raw_os_error(errno));
+            }
+        }
+
+        Ok((upper_dword as u64) << 32 | lower_dword as u64)
+    }
 }
 
 #[allow(dead_code)]

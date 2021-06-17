@@ -772,14 +772,6 @@ extern "system" {
     ) -> HANDLE;
     pub fn WaitForSingleObject(hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
     pub fn Sleep(dwMilliseconds: DWORD);
-    pub fn CopyFileExW(
-        lpExistingFileName: LPCWSTR,
-        lpNewFileName: LPCWSTR,
-        lpProgressRoutine: LPPROGRESS_ROUTINE,
-        lpData: LPVOID,
-        pbCancel: LPBOOL,
-        dwCopyFlags: DWORD,
-    ) -> BOOL;
     pub fn FormatMessageW(
         flags: DWORD,
         lpSrc: LPVOID,
@@ -1134,6 +1126,20 @@ compat_fn! {
         // just leak it on NT 3.1
         TRUE
     }
+
+    // NT 4+, 95+ (with unicows)
+    // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-copyfileexw
+    pub fn CopyFileExW(
+        lpExistingFileName: LPCWSTR,
+        lpNewFileName: LPCWSTR,
+        lpProgressRoutine: LPPROGRESS_ROUTINE,
+        lpData: LPVOID,
+        pbCancel: LPBOOL,
+        dwCopyFlags: DWORD
+    ) -> BOOL {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
+        FALSE
+    }
 }
 
 extern "system" {
@@ -1169,6 +1175,12 @@ extern "system" {
     pub fn LoadLibraryA(lpFileName: LPCSTR) -> HMODULE;
 
     pub fn GetTickCount() -> DWORD;
+    pub fn GetFileSize(hFile: HANDLE, lpFileSizeHigh: *mut DWORD) -> DWORD;
+    pub fn CopyFileW(
+        lpExistingFileName: LPCWSTR,
+        lpNewFileName: LPCWSTR,
+        bFailIfExists: BOOL,
+    ) -> BOOL;
 }
 
 #[repr(C)]
@@ -1187,6 +1199,7 @@ pub type LPSYSTEMTIME = *mut SYSTEMTIME;
 
 pub const INVALID_SET_FILE_POINTER: DWORD = 0xFFFFFFFF;
 pub const NO_ERROR: DWORD = 0;
+pub const INVALID_FILE_SIZE: DWORD = 0xFFFFFFFF;
 
 compat_fn_lazy! {
     "advapi32":{unicows: false, load: true}:
