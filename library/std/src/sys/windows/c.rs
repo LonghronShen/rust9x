@@ -837,8 +837,6 @@ extern "system" {
         lpOverlapped: LPOVERLAPPED,
     ) -> BOOL;
     pub fn CloseHandle(hObject: HANDLE) -> BOOL;
-    pub fn MoveFileExW(lpExistingFileName: LPCWSTR, lpNewFileName: LPCWSTR, dwFlags: DWORD)
-    -> BOOL;
 
     pub fn FlushFileBuffers(hFile: HANDLE) -> BOOL;
     pub fn CreateFileW(
@@ -1139,6 +1137,23 @@ compat_fn! {
     ) -> BOOL {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
         FALSE
+    }
+
+    pub fn MoveFileExW(lpExistingFileName: LPCWSTR, lpNewFileName: LPCWSTR, dwFlags: DWORD)
+    -> BOOL {
+        match dwFlags {
+            0 | MOVEFILE_REPLACE_EXISTING => {
+                let failIfExists = if dwFlags == 0 { TRUE } else { FALSE };
+                if CopyFileW(lpExistingFileName, lpNewFileName, failIfExists) == FALSE {
+                    return FALSE;
+                }
+                DeleteFileW(lpExistingFileName)
+            }
+            _ => {
+                SetLastError(ERROR_CALL_NOT_IMPLEMENTED as DWORD);
+                FALSE
+            }
+        }
     }
 }
 
